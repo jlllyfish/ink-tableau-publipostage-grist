@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🐙 Ink - Export PDF Grist</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dsfr.min.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/utility.min.css') }}"
+    />
+    <style>
+      .hidden {
+        display: none !important;
+      }
+      .sortable-columns {
+        list-style: none;
+        padding: 0;
+      }
+      .sortable-columns li {
+        background: #f6f6f6;
+        border: 1px solid #ddd;
+        border-radius: 0.25rem;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        cursor: move;
+      }
+      .drag-handle {
+        margin-right: 1rem;
+        cursor: grab;
+      }
+      .sortable-ghost {
+        opacity: 0.4;
+      }
+      /* NOUVEAU : Cacher le texte du fichier quand uploadé */
+      .fr-upload::-webkit-file-upload-button {
+        cursor: pointer;
+      }
+      .fr-upload::file-selector-button {
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <header role="banner" class="fr-header">
+      <div class="fr-header__body">
+        <div class="fr-container">
+          <div class="fr-header__body-row">
+            <div class="fr-header__brand fr-enlarge-link">
+              <div class="fr-header__brand-top">
+                <div class="fr-header__logo">
+                  <p class="fr-logo">République<br />Française</p>
+                </div>
+              </div>
+              <div class="fr-header__service">
+                <p class="fr-header__service-title">🐙 Ink</p>
+                <p class="fr-header__service-tagline">Export PDF Grist</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="fr-container fr-pb-6w">
+      <h4 class="fr-mt-4w fr-mb-4w">Générateur de tableaux PDF depuis Grist</h1>
+
+      <!-- Navigation par onglets -->
+      <div class="fr-tabs">
+        <ul
+          class="fr-tabs__list"
+          role="tablist"
+          aria-label="Étapes de configuration"
+        >
+          <li role="presentation">
+            <button
+              class="fr-tabs__tab fr-tabs__tab--icon-left fr-icon-account-line"
+              id="tabpanel-connexion"
+              tabindex="0"
+              role="tab"
+              aria-selected="true"
+              aria-controls="tabpanel-connexion-panel"
+            >
+              Connexion
+            </button>
+          </li>
+          <li role="presentation">
+            <button
+              class="fr-tabs__tab fr-tabs__tab--icon-left fr-icon-layout-grid-line"
+              id="tabpanel-colonnes"
+              tabindex="-1"
+              role="tab"
+              aria-selected="false"
+              aria-controls="tabpanel-colonnes-panel"
+            >
+              Colonnes
+            </button>
+          </li>
+          <li role="presentation">
+            <button
+              class="fr-tabs__tab fr-tabs__tab--icon-left fr-icon-edit-line"
+              id="tabpanel-personnalisation"
+              tabindex="-1"
+              role="tab"
+              aria-selected="false"
+              aria-controls="tabpanel-personnalisation-panel"
+            >
+              Personnalisation
+            </button>
+          </li>
+          <li role="presentation">
+            <button
+              class="fr-tabs__tab fr-tabs__tab--icon-left fr-icon-save-line"
+              id="tabpanel-configuration"
+              tabindex="-1"
+              role="tab"
+              aria-selected="false"
+              aria-controls="tabpanel-configuration-panel"
+            >
+              Configurations
+            </button>
+          </li>
+          <li role="presentation">
+            <button
+              class="fr-tabs__tab fr-tabs__tab--icon-left fr-icon-download-line"
+              id="tabpanel-export"
+              tabindex="-1"
+              role="tab"
+              aria-selected="false"
+              aria-controls="tabpanel-export-panel"
+            >
+              Export
+            </button>
+          </li>
+        </ul>
+
+        <!-- Onglet 1: Connexion -->
+        <div
+          class="fr-tabs__panel fr-tabs__panel--selected"
+          id="tabpanel-connexion-panel"
+          role="tabpanel"
+          aria-labelledby="tabpanel-connexion"
+        >
+          <div class="fr-card fr-p-4w fr-mt-4w">
+            <div class="fr-card__body">
+              <div class="fr-card__content">
+                <h2 class="fr-h4 fr-mb-3w">Connexion à Grist</h2>
+
+                <div class="fr-input-group">
+                  <label class="fr-label" for="api-url">
+                    URL de l'API Grist
+                    <span class="fr-hint-text"
+                      >Ex: https://votre-instance.getgrist.com</span
+                    >
+                  </label>
+                  <input
+                    class="fr-input"
+                    type="text"
+                    id="api-url"
+                      value="https://grist.numerique.gouv.fr"
+                      readonly
+                  />
+                </div>
+
+                <div class="fr-input-group">
+                  <label class="fr-label" for="api-token">
+                    Token API
+                    <span class="fr-hint-text"
+                      >Votre clé d'API Grist (Profile > API Security)</span
+                    >
+                  </label>
+                  <input
+                    class="fr-input"
+                    type="password"
+                    id="api-token"
+                    placeholder="Votre token API"
+                  />
+                </div>
+
+                <div class="fr-input-group">
+                  <label class="fr-label" for="doc-id">
+                    ID du document
+                    <span class="fr-hint-text"
+                      >L'identifiant du document Grist (visible dans
+                      l'URL)</span
+                    >
+                  </label>
+                  <input
+                    class="fr-input"
+                    type="text"
+                    id="doc-id"
+                    placeholder="ex: abcdef123456"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  id="connect-btn"
+                  class="fr-btn fr-btn--icon-left fr-icon-refresh-line fr-mt-2w"
+                >
+                  Charger les tables
+                </button>
+
+                <div id="connection-status" class="fr-mt-3w hidden">
+                  <div class="fr-alert fr-alert--success">
+                    <p id="connection-message">
+                      Connexion établie ! Tables chargées.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="fr-select-group fr-mt-4w" id="table-selection">
+                  <label class="fr-label" for="table-select">
+                    Sélectionner une table
+                  </label>
+                  <select class="fr-select" id="table-select" disabled>
+                    <option value="">Chargez d'abord les tables</option>
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  id="load-columns-btn"
+                  class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-download-line fr-mt-2w"
+                  disabled
+                >
+                  Charger les colonnes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Onglet 2: Colonnes -->
+        <div
+          class="fr-tabs__panel"
+          id="tabpanel-colonnes-panel"
+          role="tabpanel"
+          aria-labelledby="tabpanel-colonnes"
+        >
+          <div class="fr-card fr-p-4w fr-mt-4w">
+            <div class="fr-card__body">
+              <div class="fr-card__content">
+                <h2 class="fr-h4 fr-mb-3w">Configuration des colonnes</h2>
+
+                <div class="fr-grid-row fr-grid-row--gutters">
+                  <div class="fr-col-12 fr-col-md-6">
+                    <div class="fr-select-group">
+                      <label class="fr-label" for="filter-column">
+                        Colonne de filtrage
+                        <span class="fr-hint-text"
+                          >Les PDF seront séparés selon les valeurs de cette
+                          colonne</span
+                        >
+                      </label>
+                      <select class="fr-select" id="filter-column" required>
+                        <option value="">Sélectionnez une colonne</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="fr-mt-4w">
+                  <label class="fr-label">
+                    Colonnes à inclure
+                    <span class="fr-hint-text"
+                      >Glissez les colonnes (☰) pour changer leur ordre</span
+                    >
+                  </label>
+                  <ul id="sortable-columns" class="sortable-columns fr-mt-2w">
+                    <!-- Colonnes ajoutées dynamiquement -->
+                  </ul>
+                </div>
+
+                <div class="fr-mt-3w">
+                  <button
+                    type="button"
+                    class="fr-btn fr-btn--secondary fr-btn--sm"
+                    id="select-all-columns"
+                  >
+                    Tout sélectionner
+                  </button>
+                  <button
+                    type="button"
+                    class="fr-btn fr-btn--secondary fr-btn--sm fr-ml-2w"
+                    id="deselect-all-columns"
+                  >
+                    Tout désélectionner
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="fr-card fr-p-4w fr-mt-4w">
+            <div class="fr-card__body">
+              <div class="fr-card__content">
+                <h2 class="fr-h5 fr-mb-3w">Filtres avancés (optionnel)</h2>
+
+                <!-- NOUVEAU : Sélecteur de mode ET/OU -->
+                <div class="fr-form-group fr-mb-3w">
+                  <fieldset class="fr-fieldset" id="filter-mode-fieldset">
+                    <legend class="fr-fieldset__legend fr-text--regular">
+                      Mode de combinaison des filtres :
+                      <span class="fr-hint-text">Comment combiner les filtres entre eux</span>
+                    </legend>
+                    <div class="fr-fieldset__content">
+                      <div class="fr-radio-group fr-radio-rich">
+                        <input type="radio" id="filter-mode-and" name="filter-mode" value="and" checked>
+                        <label class="fr-label" for="filter-mode-and">
+                          Mode ET
+                          <span class="fr-hint-text">Tous les filtres doivent correspondre (plus restrictif)</span>
+                        </label>
+                      </div>
+                      <div class="fr-radio-group fr-radio-rich">
+                        <input type="radio" id="filter-mode-or" name="filter-mode" value="or">
+                        <label class="fr-label" for="filter-mode-or">
+                          Mode OU
+                          <span class="fr-hint-text">Au moins un filtre doit correspondre (plus permissif)</span>
+                        </label>
+                      </div>
+                    </div>
+                  </fieldset>
+                </div>
+
+                <!-- Indicateur du nombre de PDFs -->
+                <div
+                  id="pdf-count-indicator"
+                  class="fr-alert fr-alert--info fr-mb-3w"
+                  style="display: none"
+                >
+                  <p class="fr-text--sm">
+                    <strong id="pdf-count-number">0</strong> PDF(s) seront
+                    générés avec les paramètres actuels
+                    <span id="pdf-count-details"></span>
+                  </p>
+                  <button
+                    type="button"
+                    class="fr-btn fr-btn--sm fr-btn--secondary fr-mt-2w"
+                    id="refresh-count-btn"
+                  >
+                    🔄 Actualiser le compteur
+                  </button>
+                </div>
+
+                <div id="advanced-filters-container">
+                  <!-- Filtres ajoutés dynamiquement -->
+                </div>
+
+                <button
+                  type="button"
+                  id="add-filter-btn"
+                  class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-add-line fr-mt-2w"
+                >
+                  Ajouter un filtre
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Onglet 3: Personnalisation -->
+        <div
+          class="fr-tabs__panel"
+          id="tabpanel-personnalisation-panel"
+          role="tabpanel"
+          aria-labelledby="tabpanel-personnalisation"
+        >
+          <div class="fr-card fr-p-4w fr-mt-4w">
+            <div class="fr-card__body">
+              <div class="fr-card__content">
+                <h2 class="fr-h4 fr-mb-3w">Personnalisation du PDF</h2>
+
+                <!-- Section Logo -->
+                <div class="fr-upload-group">
+                  <label class="fr-label" for="logo-upload">
+                    Logo de l'organisation
+                    <span class="fr-hint-text">
+                      Le logo apparaîtra en haut à gauche du PDF. Formats
+                      acceptés : PNG, JPG, JPEG (2 Mo max)
+                    </span>
+                  </label>
+                  <input
+                    class="fr-upload"
+                    type="file"
+                    id="logo-upload"
+                    accept=".png,.jpg,.jpeg"
+                    aria-describedby="logo-upload-hint"
+                  />
+                  <p class="fr-hint-text" id="logo-upload-hint">
+                    Taille recommandée : 200x100 pixels
+                  </p>
+                </div>
+
+                <!-- Aperçu du logo -->
+                <div id="logo-preview" class="fr-mt-2w hidden">
+                  <p class="fr-text--sm fr-text--bold">Aperçu du logo :</p>
+                  <img
+                    id="logo-preview-img"
+                    src=""
+                    alt="Aperçu du logo"
+                    style="max-width: 200px; max-height: 100px; border: 1px solid #ddd; padding: 0.5rem;"
+                  />
+                  <button
+                    type="button"
+                    class="fr-btn fr-btn--sm fr-btn--secondary fr-mt-2w"
+                    id="remove-logo-btn"
+                  >
+                    Supprimer le logo
+                  </button>
+                </div>
+
+                <div class="fr-input-group fr-mt-4w">
+                  <label class="fr-label" for="service-name">
+                    Nom du service
+                  </label>
+                  <input
+                    class="fr-input"
+                    type="text"
+                    id="service-name"
+                    value="DRAAF SRFD Occitanie"
+                  />
+                </div>
+
+                <div class="fr-input-group">
+                  <label class="fr-label" for="signer-firstname">
+                    Prénom du signataire
+                  </label>
+                  <input
+                    class="fr-input"
+                    type="text"
+                    id="signer-firstname"
+                    placeholder="Jean"
+                  />
+                </div>
+
+                <div class="fr-input-group">
+                  <label class="fr-label" for="signer-name">
+                    Nom du signataire
+                  </label>
+                  <input
+                    class="fr-input"
+                    type="text"
+                    id="signer-name"
+                    placeholder="DUPONT"
+                  />
+                </div>
+
+                <div class="fr-input-group">
+                  <label class="fr-label" for="signer-title">
+                    Titre du signataire
+                  </label>
+                  <input
+                    class="fr-input"
+                    type="text"
+                    id="signer-title"
+                    placeholder="Chef de service"
+                  />
+                </div>
+
+                <!-- Upload signature -->
+                <div class="fr-upload-group fr-mt-4w">
+                  <label class="fr-label" for="signature-upload">
+                    Signature (optionnel)
+                    <span class="fr-hint-text">
+                      Formats acceptés : PNG, JPG, JPEG (5 Mo max)
+                    </span>
+                  </label>
+                  <input
+                    class="fr-upload"
+                    type="file"
+                    id="signature-upload"
+                    accept=".png,.jpg,.jpeg"
+                    aria-describedby="signature-upload-hint"
+                  />
+                  <p class="fr-hint-text" id="signature-upload-hint">
+                    Taille recommandée : 300x150 pixels
+                  </p>
+                </div>
+
+                <!-- Aperçu signature -->
+                <div id="signature-preview" class="fr-mt-2w hidden">
+                  <p class="fr-text--sm fr-text--bold">
+                    Aperçu de la signature :
+                  </p>
+                  <img
+                    id="signature-preview-img"
+                    src=""
+                    alt="Aperçu de la signature"
+                    style="max-width: 300px; max-height: 150px"
+                  />
+                  <button
+                    type="button"
+                    class="fr-btn fr-btn--sm fr-btn--secondary fr-mt-2w"
+                    id="remove-signature-btn"
+                  >
+                    Supprimer la signature
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Onglet 4: Configurations -->
+        <div
+          class="fr-tabs__panel"
+          id="tabpanel-configuration-panel"
+          role="tabpanel"
+          aria-labelledby="tabpanel-configuration"
+        >
+          <div class="fr-card fr-p-4w fr-mt-4w">
+            <div class="fr-card__body">
+              <div class="fr-card__content">
+                <h2 class="fr-h4 fr-mb-3w">Sauvegarder la configuration</h2>
+
+                <div class="fr-input-group">
+                  <label class="fr-label" for="config-name">
+                    Nom de la configuration
+                    <span class="fr-hint-text"
+                      >Donnez un nom descriptif à cette configuration</span
+                    >
+                  </label>
+                  <input
+                    class="fr-input"
+                    type="text"
+                    id="config-name"
+                    placeholder="Ex: Configuration mensuelle"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  id="save-config-btn"
+                  class="fr-btn fr-btn--icon-left fr-icon-save-line fr-mt-2w"
+                >
+                  Sauvegarder la configuration
+                </button>
+
+                <div id="config-save-status" class="fr-mt-3w hidden"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="fr-card fr-p-4w fr-mt-4w">
+            <div class="fr-card__body">
+              <div class="fr-card__content">
+                <h2 class="fr-h4 fr-mb-3w">Configurations sauvegardées</h2>
+                <div id="configs-list">
+                  <p class="fr-text--sm">Chargement...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Onglet 5: Export -->
+        <div
+          class="fr-tabs__panel"
+          id="tabpanel-export-panel"
+          role="tabpanel"
+          aria-labelledby="tabpanel-export"
+        >
+          <div class="fr-card fr-p-4w fr-mt-4w">
+            <div class="fr-card__body">
+              <div class="fr-card__content">
+                <h2 class="fr-h4 fr-mb-3w">Génération des PDFs</h2>
+
+                <div class="fr-input-group">
+                  <label class="fr-label" for="output-dir">
+                    Dossier de sortie
+                  </label>
+                  <input
+                    class="fr-input"
+                    type="text"
+                    id="output-dir"
+                    value="output"
+                  />
+                </div>
+
+                <div class="fr-input-group">
+                  <label class="fr-label" for="filename-pattern">
+                    Modèle de nom de fichier
+                    <span class="fr-hint-text"
+                      >Utilisez {filter_value} pour la valeur, {date} pour la
+                      date</span
+                    >
+                  </label>
+                  <input
+                    class="fr-input"
+                    type="text"
+                    id="filename-pattern"
+                    value="{filter_value}_{date}.pdf"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  id="export-btn"
+                  class="fr-btn fr-btn--icon-left fr-icon-download-line fr-mt-2w"
+                >
+                  Générer les PDFs
+                </button>
+
+                <div id="export-results" class="fr-mt-4w hidden">
+                  <div class="fr-alert fr-alert--success">
+                    <p id="export-message">Export terminé !</p>
+                    <div id="files-list"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Upload vers Grist -->
+          <div class="fr-card fr-p-4w fr-mt-4w">
+            <div class="fr-card__body">
+              <div class="fr-card__content">
+                <h2 class="fr-h4 fr-mb-3w">
+                  Upload des PDFs vers Grist (optionnel)
+                </h2>
+
+                <div class="fr-input-group">
+                  <label class="fr-label" for="attachment-column">
+                    Nom de la colonne de pièces jointes
+                    <span class="fr-hint-text"
+                      >Nom de la colonne Attachments où uploader les PDFs dans
+                      Grist</span
+                    >
+                  </label>
+                  <input
+                    class="fr-input"
+                    type="text"
+                    id="attachment-column"
+                    placeholder="Ex: Attestations"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  id="upload-to-grist-btn"
+                  class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-upload-line fr-mt-2w"
+                >
+                  Uploader vers Grist
+                </button>
+
+                <div id="upload-results" class="fr-mt-4w hidden"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dsfr.module.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </body>
+</html>
